@@ -1,16 +1,48 @@
-require("dotenv").config();
+//required
 const express = require("express");
-const dbConnect = require("./dbConnect");
-const movieRoutes = require("./routes/movies");
-const cors = require("cors");
-const app = express();
+const User = require('./models/users');
+const mongoose = require('mongoose');
 
-dbConnect();
+//Databse Connection
+mongoose.connect('mongodb://127.0.0.1:27017/test')
+mongoose.connection.on("connected",()=>{
+    console.log("Datbase connected");
+})
+mongoose.connection.on("error",()=>{
+    console.log("Database Error")
+})
 
+
+//init server
+const app=express();
 app.use(express.json());
-app.use(cors());
 
-app.use("/api", movieRoutes);
+app.get('/users', async(req,res)=>{
+    try {
+        const page=parseInt(req.query.page)-1||0;
+        const limit =parseInt(req.query.limit) ||5;
+        const searchvalue=req.query.searchvalue || "";
+        const sort=req.query.sort || "";
+        // const sort=req.query.sort || "";
+      
+        const users= await 
+        User.find({username:{$regex:new RegExp('^'+searchvalue+".*"), $options:"i"}})
+        .sort(sort)
+        .limit(limit*1)
+        .skip(page*limit);
+        res.json(users);
 
-const port = process.env.PORT || 8080;  //define port variable its value can be port defined in enviroment or 8080 
-app.listen(port, () => console.log(`Listening on port ${port}...`));  //listen our app
+
+
+        
+    } catch (error) {
+        console.log(error)
+        res.status(500).send("Internal Server Error")
+    }
+})
+
+//server
+app.listen(3000,(req,res)=>{
+    console.log("listening on port 3000");
+})
+
